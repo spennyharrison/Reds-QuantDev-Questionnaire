@@ -1,0 +1,27 @@
+SELECT
+	t.LEVEL_NAME,
+	t.LEAGUE_NAME,
+	SUM(s.ER) as lgER,
+	SUM((CASE WHEN s.PA = 1 AND s.H = 0 AND s.BB = 0 AND s.IBB = 0 AND s.HBP = 0 THEN 1 ELSE 0 END) +
+		 CASE WHEN s.CS = 1 THEN 1 ELSE 0 END) as lgOuts,
+	SUM(s.HR) as lgHR,
+	SUM(s.BB + s.IBB) as lgBB,
+	SUM(s.HBP) as lgHBP,
+	SUM(s.SO) as lgK
+INTO #FIPdata
+FROM STATS s
+INNER JOIN TEAM t
+	ON YEAR(s.GAME_DATE) = t.SEASON
+	AND s.BATTER_TEAM_ID = t.TEAM_ID
+WHERE t.SEASON = 2019
+GROUP BY
+	t.LEVEL_NAME,
+	t.LEAGUE_NAME
+	
+SELECT
+	LEVEL_NAME,
+	LEAGUE_NAME,
+	((lgER * 9) / (1.0 * lgOuts / 3)) - (((13 * lgHR) + (3 * (lgBB + lgHBP)) - (2 * lgK)) / (1.0 * lgOuts / 3)) as FIP_Constant
+FROM #FIPdata
+
+DROP TABLE IF EXISTS #FIPdata
